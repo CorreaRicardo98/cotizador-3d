@@ -1,0 +1,997 @@
+<!doctype html>
+<html lang="es-MX">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Cotizador de impresión 3D</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Atkinson+Hyperlegible:wght@400;700&display=swap">
+<style>
+/* Layout: formulario a la izquierda, ticket de precio fijo a la derecha; una columna en móvil */
+:root {
+  --bg: #eef2f1;
+  --surface: #ffffff;
+  --ink: #15211e;
+  --muted: #5b6b67;
+  --line: #d3dcd9;
+  --accent: #0b7a62;
+  --accent-ink: #ffffff;
+  --soft: #e3eeea;
+  --seg-material: #0b7a62;
+  --seg-luz: #d49a12;
+  --seg-desgaste: #6d7f8f;
+  --seg-desperdicio: #b85a2b;
+  --seg-post: #8a6d3b;
+  --seg-diseno: #7d5ba6;
+  --seg-ganancia: #15211e;
+  --focus: #1f6fd1;
+  --error: #b3261e;
+  --font-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --font-body: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1615; --surface: #18211f; --ink: #e6efec; --muted: #9aaba6; --line: #2c3a37;
+    --accent: #3cc7a2; --accent-ink: #062019; --soft: #1d2b28;
+    --seg-material: #3cc7a2; --seg-luz: #f0bd45; --seg-desgaste: #93a6b6; --seg-desperdicio: #e2875a;
+    --seg-post: #c9a76a; --seg-diseno: #b294dc; --seg-ganancia: #e6efec; --focus: #6aa8ff; --error: #ff8a80;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f1615; --surface: #18211f; --ink: #e6efec; --muted: #9aaba6; --line: #2c3a37;
+  --accent: #3cc7a2; --accent-ink: #062019; --soft: #1d2b28;
+  --seg-material: #3cc7a2; --seg-luz: #f0bd45; --seg-desgaste: #93a6b6; --seg-desperdicio: #e2875a;
+  --seg-post: #c9a76a; --seg-diseno: #b294dc; --seg-ganancia: #e6efec; --focus: #6aa8ff; --error: #ff8a80;
+  color-scheme: dark;
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.5;
+}
+.wrap {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding-block: 32px 48px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid;
+  gap: 28px;
+}
+header h1 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(1.75rem, 4vw, 2.4rem);
+  line-height: 1.1;
+  margin: 0;
+  text-wrap: balance;
+}
+header p { margin: 6px 0 0; color: var(--muted); max-width: 62ch; }
+
+.grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 28px;
+  align-items: start;
+}
+@media (min-width: 900px) {
+  .grid { grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); }
+  .ticket { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 16px); }
+}
+
+form { display: grid; gap: 24px; min-width: 0; }
+fieldset {
+  border: 0;
+  border-top: 1px solid var(--line);
+  margin: 0;
+  padding: 16px 0 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 14px 16px;
+  min-width: 0;
+}
+legend {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.1rem;
+  padding: 0 0 10px;
+}
+.field { display: grid; gap: 4px; min-width: 0; align-content: start; }
+.field.wide { grid-column: 1 / -1; }
+label, .lbl { font-weight: 700; font-size: 0.92rem; }
+.hint { font-size: 0.82rem; color: var(--muted); }
+.input {
+  display: flex;
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  min-width: 0;
+}
+.input:focus-within { border-color: var(--focus); box-shadow: 0 0 0 3px color-mix(in srgb, var(--focus) 25%, transparent); }
+.input span { padding: 0 10px; color: var(--muted); font-size: 0.9rem; white-space: nowrap; }
+.input input, .input textarea {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+  padding: 10px 10px;
+  outline: none;
+}
+.input textarea { resize: vertical; min-height: 3.2em; }
+.input span + input { padding-left: 0; }
+.time { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+/* Lista de piezas */
+.piezas { grid-column: 1 / -1; display: grid; gap: 10px; min-width: 0; }
+.pz {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) 40px;
+  gap: 8px;
+  align-items: center;
+  padding-bottom: 10px;
+  border-bottom: 1px dashed var(--line);
+}
+.pz .nm { grid-column: 1 / 5; }
+.pz .x { grid-column: 5; grid-row: 1; }
+.pz .x {
+  width: 40px; height: 40px;
+  border: 1px solid var(--line); border-radius: 8px;
+  background: transparent; color: var(--muted);
+  font: inherit; font-size: 1.2rem; line-height: 1; cursor: pointer;
+}
+.pz .x:hover { color: var(--error); border-color: var(--error); }
+.pz .x:disabled { opacity: 0.35; cursor: default; }
+.pz-tot { font-size: 0.9rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.pz-tot b { color: var(--ink); }
+@media (max-width: 520px) {
+  .pz { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 40px; }
+  .pz .nm { grid-column: 1 / 3; }
+  .pz .x { grid-column: 3; }
+}
+
+/* Recomendación de desperdicio */
+.reco {
+  grid-column: 1 / -1;
+  background: var(--soft);
+  border-radius: 12px;
+  padding: 16px;
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+}
+.reco-factores { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px 14px; }
+.reco-res { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px; }
+.reco-num { font-family: var(--font-display); font-weight: 700; font-size: 1.9rem; line-height: 1; font-variant-numeric: tabular-nums; }
+.reco ul { margin: 0; padding-left: 1.1em; font-size: 0.88rem; color: var(--muted); display: grid; gap: 2px; }
+.ia { border-top: 1px solid var(--line); padding-top: 12px; display: grid; gap: 8px; }
+.ia p { margin: 0; font-size: 0.9rem; }
+.ia .err { color: var(--error); }
+
+.switch { display: flex; gap: 10px; align-items: center; font-weight: 700; cursor: pointer; }
+.switch input { width: 20px; height: 20px; accent-color: var(--accent); margin: 0; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip {
+  font: inherit;
+  font-size: 0.92rem;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  border-radius: 999px;
+  padding: 6px 14px;
+  cursor: pointer;
+}
+.chip[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+select {
+  font: inherit;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px;
+  min-width: 0;
+  width: 100%;
+}
+button:focus-visible, select:focus-visible, .switch input:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+
+.ticket {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 22px;
+  display: grid;
+  gap: 18px;
+  min-width: 0;
+}
+.price-label { color: var(--muted); font-size: 0.95rem; margin: 0; }
+.price {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(2.6rem, 8vw, 3.6rem);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  margin: 4px 0 0;
+  letter-spacing: -0.02em;
+}
+.per-piece { margin: 6px 0 0; color: var(--muted); }
+
+.bar {
+  display: flex;
+  height: 14px;
+  border-radius: 7px;
+  overflow: hidden;
+  background: var(--line);
+}
+.bar i { display: block; height: 100%; transition: flex-basis 0.3s ease; }
+
+table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+td { padding: 7px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+td.amt { text-align: right; white-space: nowrap; padding-left: 12px; }
+td small { display: block; color: var(--muted); font-size: 0.8rem; }
+.sw { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 8px; vertical-align: 1px; }
+tr.sub td { font-weight: 700; border-bottom: 2px solid var(--ink); }
+
+.actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.btn {
+  font: inherit;
+  font-weight: 700;
+  border-radius: 8px;
+  padding: 10px 16px;
+  cursor: pointer;
+  border: 1px solid var(--accent);
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+.btn.ghost { background: transparent; color: var(--ink); border-color: var(--line); }
+.btn.small { padding: 7px 12px; font-size: 0.9rem; }
+.btn:disabled { opacity: 0.55; cursor: default; }
+.status { font-size: 0.88rem; color: var(--muted); min-height: 1.3em; margin: 0; }
+#texto {
+  width: 100%;
+  box-sizing: border-box;
+  font: inherit;
+  font-size: 0.9rem;
+  color: var(--ink);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px;
+  resize: vertical;
+}
+.note { font-size: 0.85rem; color: var(--muted); margin: 0; max-width: 65ch; }
+
+@media (prefers-reduced-motion: reduce) {
+  .bar i { transition: none; }
+}
+</style>
+</head>
+<body>
+
+
+<div class="wrap">
+  <header>
+    <h1>Cotizador de impresión 3D</h1>
+    <p>Calcula cuánto cobrar por un trabajo en la Bambu Lab A1. Pon cada pieza con su peso y tiempo del slicer, ajusta el desperdicio y descarga la cotización en PDF para tu cliente.</p>
+  </header>
+
+  <div class="grid">
+    <form id="f" autocomplete="off">
+      <fieldset>
+        <legend>El trabajo</legend>
+        <div class="field wide">
+          <label for="nombre">Nombre del trabajo</label>
+          <div class="input"><input id="nombre" type="text" value="Codo en U para platos giratorios"></div>
+        </div>
+        <div class="piezas">
+          <span class="lbl">Piezas</span>
+          <div id="listaPiezas" style="display: grid; gap: 10px"></div>
+          <div class="actions" style="align-items: center; justify-content: space-between">
+            <button type="button" class="btn ghost small" id="agregarPieza">+ Agregar pieza</button>
+            <span class="pz-tot" id="totPiezas"></span>
+          </div>
+          <span class="hint">Peso y tiempo de una sola pieza, como los marca el slicer (Bambu Studio ya incluye soportes y purga en el peso).</span>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Material y luz</legend>
+        <div class="field">
+          <label for="material">Material</label>
+          <div class="input"><input id="material" type="text" value="PLA"></div>
+        </div>
+        <div class="field">
+          <label for="precioKg">Precio del filamento</label>
+          <div class="input"><span>$</span><input id="precioKg" type="number" min="0" step="1" value="300" inputmode="decimal"><span>/ kg</span></div>
+        </div>
+        <div class="field">
+          <label for="precioKwh">Luz</label>
+          <div class="input"><span>$</span><input id="precioKwh" type="number" min="0" step="0.01" value="0.50" inputmode="decimal"><span>/ kWh</span></div>
+        </div>
+        <div class="field">
+          <label for="watts">Consumo de la impresora</label>
+          <div class="input"><input id="watts" type="number" min="0" step="1" value="95" inputmode="numeric"><span>W</span></div>
+          <span class="hint">95 W es el promedio de la A1 con PLA</span>
+        </div>
+        <div class="field">
+          <label for="desgaste">Desgaste de la impresora</label>
+          <div class="input"><span>$</span><input id="desgaste" type="number" min="0" step="0.5" value="3" inputmode="decimal"><span>/ hora</span></div>
+          <span class="hint">Boquillas, cama y el costo de la máquina repartido en sus horas</span>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Desperdicio y reimpresiones</legend>
+        <div class="field">
+          <label for="desperdicio">Porcentaje de desperdicio</label>
+          <div class="input"><input id="desperdicio" type="number" min="0" max="100" step="1" value="27" inputmode="numeric"><span>%</span></div>
+          <span class="hint">Se suma al filamento, la luz y el desgaste: cubre purgas, puntas del rollo y piezas que hay que repetir</span>
+        </div>
+        <div class="reco" aria-labelledby="recoTit">
+          <span class="lbl" id="recoTit">Recomendación según el trabajo</span>
+          <div class="reco-factores">
+            <div class="field">
+              <label for="fSoportes">Soportes</label>
+              <select id="fSoportes">
+                <option value="ninguno">Sin soportes</option>
+                <option value="pocos" selected>En algunas zonas</option>
+                <option value="muchos">En muchas zonas</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="fColores">Colores</label>
+              <select id="fColores">
+                <option value="uno" selected>Un color</option>
+                <option value="multi">Varios colores (AMS)</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="fHistorial">El diseño</label>
+              <select id="fHistorial">
+                <option value="probado">Ya lo imprimí antes y sale bien</option>
+                <option value="nuevo" selected>Es nuevo o lleva ajustes</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="fEncaje">Encaje entre piezas</label>
+              <select id="fEncaje">
+                <option value="no">No encaja con nada</option>
+                <option value="si" selected>Encaja o hace clic</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="fTamano">Tamaño</label>
+              <select id="fTamano">
+                <option value="normal">Cabe con espacio</option>
+                <option value="grande" selected>Ocupa casi toda la cama</option>
+              </select>
+            </div>
+          </div>
+          <div class="reco-res">
+            <span>Recomendado</span>
+            <span class="reco-num" id="recoNum">0 %</span>
+            <button type="button" class="btn small" id="usarReco">Usar este porcentaje</button>
+          </div>
+          <ul id="recoRazones"></ul>
+          <div class="ia" id="iaBox" hidden>
+            <div class="field">
+              <label for="detalles">Detalles para Claude (opcional)</label>
+              <div class="input"><textarea id="detalles" rows="2" placeholder="Ej. paredes delgadas, va a cargar peso, boquilla 0.6, velocidad Sport"></textarea></div>
+            </div>
+            <div class="actions">
+              <button type="button" class="btn ghost small" id="preguntarIA">Pedir recomendación a Claude</button>
+              <button type="button" class="btn small" id="usarIA" hidden>Usar el de Claude</button>
+            </div>
+            <p id="iaRes" aria-live="polite"></p>
+            <ul id="iaRazones"></ul>
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Trabajo a mano</legend>
+        <div class="field wide">
+          <label class="switch" for="cobrarDiseno"><input type="checkbox" id="cobrarDiseno"> Cobrar tiempo de diseño</label>
+          <span class="hint">Modelado y ajustes del archivo. La tarifa ya es tu precio, así que no se le suma la ganancia.</span>
+        </div>
+        <div class="field" data-diseno>
+          <label for="disHoras">Tiempo de diseño</label>
+          <div class="time">
+            <div class="input"><input id="disHoras" type="number" min="0" step="1" value="3" inputmode="numeric" aria-label="Horas de diseño"><span>h</span></div>
+            <div class="input"><input id="disMinutos" type="number" min="0" max="59" step="5" value="0" inputmode="numeric" aria-label="Minutos de diseño"><span>min</span></div>
+          </div>
+        </div>
+        <div class="field" data-diseno>
+          <label for="tarifa">Tarifa de diseño</label>
+          <div class="input"><span>$</span><input id="tarifa" type="number" min="0" step="10" value="250" inputmode="decimal"><span>/ hora</span></div>
+        </div>
+        <div class="field wide">
+          <label for="post">Postproceso y otros</label>
+          <div class="input" style="max-width: 260px"><span>$</span><input id="post" type="number" min="0" step="10" value="0" inputmode="decimal"></div>
+          <span class="hint">Quitar soportes, lijar, empaque, envío</span>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Ganancia</legend>
+        <div class="field wide">
+          <label id="margenLbl" for="margen">Ganancia sobre el costo de producir</label>
+          <div class="chips" role="group" aria-labelledby="margenLbl">
+            <button type="button" class="chip" data-m="30">30 %</button>
+            <button type="button" class="chip" data-m="50">50 %</button>
+            <button type="button" class="chip" data-m="100">100 %</button>
+            <button type="button" class="chip" data-m="200">200 %</button>
+          </div>
+          <div class="input" style="max-width: 200px"><input id="margen" type="number" min="0" step="5" value="50" inputmode="numeric"><span>%</span></div>
+        </div>
+        <div class="field">
+          <label for="redondeo">Redondear el precio a</label>
+          <select id="redondeo">
+            <option value="1">$1</option>
+            <option value="5">$5</option>
+            <option value="10" selected>$10</option>
+            <option value="50">$50</option>
+          </select>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Datos para el PDF</legend>
+        <div class="field">
+          <label for="negocio">Tu negocio</label>
+          <div class="input"><input id="negocio" type="text" placeholder="Nombre de tu taller"></div>
+        </div>
+        <div class="field">
+          <label for="contacto">Tu contacto</label>
+          <div class="input"><input id="contacto" type="text" placeholder="Teléfono o correo"></div>
+        </div>
+        <div class="field">
+          <label for="cliente">Cliente</label>
+          <div class="input"><input id="cliente" type="text" placeholder="Nombre del cliente"></div>
+        </div>
+        <div class="field">
+          <label for="folio">Folio</label>
+          <div class="input"><input id="folio" type="text"></div>
+        </div>
+        <div class="field">
+          <label for="vigencia">Vigencia</label>
+          <div class="input"><input id="vigencia" type="number" min="1" step="1" value="15" inputmode="numeric"><span>días</span></div>
+        </div>
+        <div class="field">
+          <label for="entrega">Entrega</label>
+          <div class="input"><input id="entrega" type="text" value="3 a 5 días hábiles"></div>
+        </div>
+        <div class="field wide">
+          <label for="notas">Notas para el cliente</label>
+          <div class="input"><textarea id="notas" rows="2">Se pide 50 % de anticipo para empezar la impresión.</textarea></div>
+        </div>
+        <div class="field wide">
+          <label class="switch" for="desglose"><input type="checkbox" id="desglose"> Mostrar el desglose de costos en el PDF</label>
+          <span class="hint">Apagado, el cliente solo ve las piezas, el diseño y el total.</span>
+        </div>
+      </fieldset>
+
+      <p class="note">El precio de la luz va en pesos: $0.50 = 50 centavos por kWh. Los datos que cambies se quedan guardados en este navegador.</p>
+    </form>
+
+    <aside class="ticket" aria-live="polite">
+      <div>
+        <p class="price-label">Precio a cobrar</p>
+        <p class="price" id="precio">$0</p>
+        <p class="per-piece" id="porPieza"></p>
+      </div>
+
+      <div class="bar" id="bar" aria-hidden="true"></div>
+
+      <table>
+        <tbody id="tabla"></tbody>
+      </table>
+
+      <div class="actions">
+        <button type="button" class="btn" id="pdf">Descargar PDF</button>
+        <button type="button" class="btn ghost" id="copiar">Copiar texto</button>
+        <button type="button" class="btn ghost" id="reiniciar">Volver al ejemplo</button>
+      </div>
+      <p class="status" id="status"></p>
+      <textarea id="texto" rows="5" readonly aria-label="Texto de la cotización"></textarea>
+    </aside>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+(function () {
+  var CAMPOS = ["nombre", "material", "precioKg", "precioKwh", "watts", "desgaste", "desperdicio",
+    "fSoportes", "fColores", "fHistorial", "fEncaje", "fTamano", "detalles",
+    "cobrarDiseno", "disHoras", "disMinutos", "tarifa", "post", "margen", "redondeo",
+    "negocio", "contacto", "cliente", "folio", "vigencia", "entrega", "notas", "desglose"];
+  var CLAVE = "cotizador-3d-v2";
+  var $ = function (id) { return document.getElementById(id); };
+  var hoy = new Date();
+  var pad = function (n) { return String(n).padStart(2, "0"); };
+  $("folio").value = "COT-" + hoy.getFullYear() + pad(hoy.getMonth() + 1) + pad(hoy.getDate());
+
+  var PIEZAS_EJEMPLO = [
+    { nombre: "Curva izquierda", cantidad: 1, gramos: 165, horas: 3, minutos: 42 },
+    { nombre: "Curva derecha", cantidad: 1, gramos: 165, horas: 3, minutos: 42 }
+  ];
+  var piezas = JSON.parse(JSON.stringify(PIEZAS_EJEMPLO));
+
+  var valor = function (el) { return el.type === "checkbox" ? el.checked : el.value; };
+  var poner = function (el, v) { if (el.type === "checkbox") el.checked = !!v; else el.value = v; };
+  var iniciales = {};
+  CAMPOS.forEach(function (c) { iniciales[c] = valor($(c)); });
+
+  var dinero = new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN", minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  var dineroRedondo = new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN", minimumFractionDigits: 0, maximumFractionDigits: 2 });
+  var entero = new Intl.NumberFormat("es-MX", { maximumFractionDigits: 0 });
+  var pos = function (v) { v = parseFloat(v); return isFinite(v) && v > 0 ? v : 0; };
+  var num = function (id) { return pos($(id).value); };
+
+  function tiempo(horasDec) {
+    var total = Math.round(horasDec * 60);
+    var h = Math.floor(total / 60), m = total % 60;
+    return h + " h" + (m ? " " + m + " min" : "");
+  }
+  function esc(s) {
+    return String(s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; });
+  }
+
+  // ---------- recomendación de desperdicio (reglas) ----------
+  var BASE = [5, "Base: línea de purga, puntas del rollo y pruebas de calibración"];
+  var FACTORES = {
+    fSoportes: { ninguno: [0], pocos: [3, "Soportes en algunas zonas: a veces se despegan o dejan la cara fea"],
+                 muchos: [7, "Muchos soportes: más zonas donde la impresión puede fallar"] },
+    fColores: { uno: [0], multi: [5, "Varios colores: purgas extra y posibles atorones del AMS"] },
+    fHistorial: { probado: [0], nuevo: [10, "Diseño nuevo: lo normal es que la primera pieza salga con ajustes"] },
+    fEncaje: { no: [0], si: [5, "Piezas que encajan o hacen clic: si la tolerancia no queda, se reimprime"] },
+    fTamano: { normal: [0], grande: [4, "Pieza que ocupa casi toda la cama: más riesgo de que se despegue"] }
+  };
+  function recomendacion() {
+    var pct = BASE[0], razones = [BASE[1]];
+    Object.keys(FACTORES).forEach(function (id) {
+      var f = FACTORES[id][$(id).value];
+      if (f && f[0]) { pct += f[0]; razones.push(f[1] + " (+" + f[0] + " %)"); }
+    });
+    return { pct: Math.min(pct, 40), razones: razones };
+  }
+
+  // ---------- piezas ----------
+  function filaPieza(p, i) {
+    var div = document.createElement("div");
+    div.className = "pz";
+    div.innerHTML =
+      '<div class="input nm"><input type="text" data-k="nombre" aria-label="Nombre de la pieza ' + (i + 1) + '" placeholder="Nombre de la pieza"></div>' +
+      '<div class="input"><input type="number" min="1" step="1" inputmode="numeric" data-k="cantidad" aria-label="Cantidad"><span>pzas</span></div>' +
+      '<div class="input"><input type="number" min="0" step="1" inputmode="decimal" data-k="gramos" aria-label="Peso de una pieza"><span>g</span></div>' +
+      '<div class="input"><input type="number" min="0" step="1" inputmode="numeric" data-k="horas" aria-label="Horas de impresión de una pieza"><span>h</span></div>' +
+      '<div class="input"><input type="number" min="0" max="59" step="1" inputmode="numeric" data-k="minutos" aria-label="Minutos de impresión de una pieza"><span>min</span></div>' +
+      '<button type="button" class="x" aria-label="Quitar pieza ' + (i + 1) + '">×</button>';
+    div.querySelectorAll("input").forEach(function (inp) {
+      inp.id = "pz" + i + "-" + inp.dataset.k;
+      inp.value = p[inp.dataset.k];
+      inp.addEventListener("input", function () { piezas[i][inp.dataset.k] = inp.dataset.k === "nombre" ? inp.value : inp.value; pintar(); });
+    });
+    var x = div.querySelector(".x");
+    x.disabled = piezas.length === 1;
+    x.addEventListener("click", function () { piezas.splice(i, 1); dibujarPiezas(); pintar(); });
+    return div;
+  }
+  function dibujarPiezas() {
+    var cont = $("listaPiezas");
+    cont.innerHTML = "";
+    piezas.forEach(function (p, i) { cont.appendChild(filaPieza(p, i)); });
+  }
+  function piezasLimpias() {
+    return piezas.map(function (p) {
+      return { nombre: (p.nombre || "").trim() || "Pieza", cantidad: Math.max(1, Math.round(pos(p.cantidad)) || 1),
+               gramos: pos(p.gramos), horas: pos(p.horas) + pos(p.minutos) / 60 };
+    });
+  }
+
+  // ---------- cálculo ----------
+  function leer() {
+    return {
+      piezas: piezasLimpias(), material: $("material").value.trim() || "PLA",
+      precioKg: num("precioKg"), precioKwh: num("precioKwh"), watts: num("watts"), desgaste: num("desgaste"),
+      desperdicio: num("desperdicio"), cobrarDiseno: $("cobrarDiseno").checked,
+      disHoras: num("disHoras") + num("disMinutos") / 60, tarifa: num("tarifa"), post: num("post"),
+      margen: num("margen"), redondeo: parseFloat($("redondeo").value) || 1
+    };
+  }
+  function calcular(d) {
+    var cant = 0, gramos = 0, horas = 0;
+    d.piezas.forEach(function (p) { cant += p.cantidad; gramos += p.cantidad * p.gramos; horas += p.cantidad * p.horas; });
+    var kwh = horas * d.watts / 1000;
+    var material = gramos / 1000 * d.precioKg;
+    var luz = kwh * d.precioKwh;
+    var desgaste = horas * d.desgaste;
+    var desperdicio = (material + luz + desgaste) * d.desperdicio / 100;
+    var costo = material + luz + desgaste + desperdicio + d.post;
+    var ganancia = costo * d.margen / 100;
+    var diseno = d.cobrarDiseno ? d.disHoras * d.tarifa : 0;
+    var bruto = costo + ganancia + diseno;
+    var precio = d.redondeo > 0 ? Math.ceil(bruto / d.redondeo - 1e-9) * d.redondeo : bruto;
+    return { cant: cant, gramos: gramos, horas: horas, kwh: kwh, material: material, luz: luz, desgaste: desgaste,
+             desperdicio: desperdicio, post: d.post, costo: costo, ganancia: ganancia + (precio - bruto),
+             diseno: diseno, precio: precio, gramosCompra: gramos * (1 + d.desperdicio / 100) };
+  }
+
+  var ultimo = null;
+  function pintar() {
+    var d = leer();
+    var r = calcular(d);
+    ultimo = { d: d, r: r };
+
+    $("totPiezas").innerHTML = "Total: <b>" + r.cant + (r.cant === 1 ? " pieza" : " piezas") + "</b>, <b>" +
+      entero.format(r.gramos) + " g</b>, <b>" + tiempo(r.horas) + "</b> de impresión";
+    document.querySelectorAll("[data-diseno]").forEach(function (el) { el.hidden = !d.cobrarDiseno; });
+
+    var rec = recomendacion();
+    $("recoNum").textContent = rec.pct + " %";
+    $("recoRazones").innerHTML = rec.razones.map(function (t) { return "<li>" + esc(t) + "</li>"; }).join("");
+    $("usarReco").disabled = rec.pct === d.desperdicio;
+
+    $("precio").textContent = dineroRedondo.format(r.precio);
+    $("porPieza").textContent = r.cant > 1
+      ? r.cant + " piezas, " + entero.format(r.gramos) + " g y " + tiempo(r.horas) + " de máquina"
+      : "1 pieza, " + entero.format(r.gramos) + " g y " + tiempo(r.horas) + " de máquina";
+
+    var filas = [
+      ["material", "Filamento " + d.material, entero.format(r.gramos) + " g a " + dineroRedondo.format(d.precioKg) + " el kg", r.material],
+      ["luz", "Luz", r.kwh.toFixed(2) + " kWh en " + tiempo(r.horas), r.luz],
+      ["desgaste", "Desgaste de la impresora", tiempo(r.horas) + " a " + dineroRedondo.format(d.desgaste) + " la hora", r.desgaste],
+      ["desperdicio", "Desperdicio y reimpresiones", d.desperdicio + " % de lo anterior; compra unos " + entero.format(r.gramosCompra) + " g", r.desperdicio],
+      ["post", "Postproceso y otros", "", r.post]
+    ];
+    var despues = [["ganancia", "Ganancia", d.margen + " % sobre el costo, ya redondeado", r.ganancia]];
+    if (d.cobrarDiseno) despues.push(["diseno", "Diseño", tiempo(d.disHoras) + " a " + dineroRedondo.format(d.tarifa) + " la hora", r.diseno]);
+
+    var fila = function (f) {
+      return '<tr><td><span class="sw" style="background: var(--seg-' + f[0] + ')"></span>' + esc(f[1]) +
+        (f[2] ? "<small>" + esc(f[2]) + "</small>" : "") + '</td><td class="amt">' + dinero.format(f[3]) + "</td></tr>";
+    };
+    $("tabla").innerHTML = filas.map(fila).join("") +
+      '<tr class="sub"><td>Lo que te cuesta producir</td><td class="amt">' + dinero.format(r.costo) + "</td></tr>" +
+      despues.map(fila).join("");
+
+    $("bar").innerHTML = filas.concat(despues).map(function (f) {
+      var p = r.precio > 0 ? f[3] / r.precio * 100 : 0;
+      return '<i style="flex: 0 0 ' + p.toFixed(2) + '%; background: var(--seg-' + f[0] + ')"></i>';
+    }).join("");
+
+    var nombre = $("nombre").value.trim() || "Impresión 3D";
+    var lineas = ["Cotización: " + nombre + ($("cliente").value.trim() ? " para " + $("cliente").value.trim() : "")];
+    d.piezas.forEach(function (p) {
+      lineas.push("- " + p.nombre + ": " + p.cantidad + " x " + entero.format(p.gramos) + " g, " + tiempo(p.horas) + " c/u");
+    });
+    lineas.push("Material: " + d.material + ", " + entero.format(r.gramos) + " g en total, " + tiempo(r.horas) + " de impresión");
+    if (d.cobrarDiseno) lineas.push("Diseño: " + tiempo(d.disHoras) + ", " + dinero.format(r.diseno));
+    lineas.push("Precio total: " + dineroRedondo.format(r.precio) + " MXN");
+    if ($("entrega").value.trim()) lineas.push("Entrega: " + $("entrega").value.trim());
+    $("texto").value = lineas.join("\n");
+
+    document.querySelectorAll(".chip").forEach(function (b) {
+      b.setAttribute("aria-pressed", String(parseFloat(b.dataset.m) === d.margen));
+    });
+    guardar();
+  }
+
+  function guardar() {
+    try {
+      var g = { piezas: piezas };
+      CAMPOS.forEach(function (c) { g[c] = valor($(c)); });
+      localStorage.setItem(CLAVE, JSON.stringify(g));
+    } catch (e) {}
+  }
+  function cargar() {
+    try {
+      var g = JSON.parse(localStorage.getItem(CLAVE) || "null");
+      if (g) {
+        CAMPOS.forEach(function (c) { if (g[c] != null && c !== "folio") poner($(c), g[c]); });
+        if (g.folio) $("folio").value = g.folio;
+        if (Array.isArray(g.piezas) && g.piezas.length) piezas = g.piezas;
+        return;
+      }
+      var v1 = JSON.parse(localStorage.getItem("cotizador-3d-v1") || "null");
+      if (v1) {
+        ["nombre", "precioKg", "precioKwh", "watts", "desgaste", "margen", "redondeo"].forEach(function (c) {
+          if (v1[c] != null) $(c).value = v1[c];
+        });
+        if (pos(v1.mano)) $("post").value = v1.mano;
+        var n = Math.max(1, Math.round(pos(v1.piezas)) || 1);
+        var mins = pos(v1.horas) * 60 + pos(v1.minutos);
+        piezas = [{ nombre: v1.nombre || "Pieza", cantidad: n, gramos: Math.round(pos(v1.gramos) / n),
+                    horas: Math.floor(mins / n / 60), minutos: Math.round(mins / n % 60) }];
+      }
+    } catch (e) {}
+  }
+
+  // ---------- recomendación de Claude ----------
+  var sample = null, iaPct = null;
+  if (window.claude && claude.use) {
+    claude.use("sample").then(function (s) { sample = s; $("iaBox").hidden = !s; }).catch(function () {});
+  }
+  $("preguntarIA").addEventListener("click", function () {
+    if (!sample || !ultimo) return;
+    var d = ultimo.d, r = ultimo.r, btn = $("preguntarIA");
+    var texto = function (id) { var s = $(id); return s.options[s.selectedIndex].text; };
+    var prompt =
+      "Eres experto en impresión 3D FDM y en cotizar trabajos. Recomienda el porcentaje de desperdicio y reimpresiones " +
+      "que conviene sumar al costo de filamento, luz y desgaste de este trabajo. El peso del slicer ya incluye soportes y purga; " +
+      "el porcentaje cubre piezas fallidas que se repiten, pruebas de ajuste, puntas del rollo y purgas extra.\n\n" +
+      "Impresora: Bambu Lab A1 (cama 256 x 256 mm, cama que se mueve en Y). Material: " + d.material + ".\n" +
+      "Piezas:\n" + d.piezas.map(function (p) {
+        return "- " + p.nombre + ": " + p.cantidad + " pza(s), " + p.gramos + " g y " + tiempo(p.horas) + " cada una";
+      }).join("\n") + "\n" +
+      "Soportes: " + texto("fSoportes") + ". Colores: " + texto("fColores") + ". Diseño: " + texto("fHistorial") +
+      ". Encaje: " + texto("fEncaje") + ". Tamaño: " + texto("fTamano") + ".\n" +
+      ($("detalles").value.trim() ? "Detalles del usuario: " + $("detalles").value.trim() + "\n" : "") +
+      "\nResponde solo con JSON: {\"porcentaje\": número entero entre 0 y 60, \"razones\": [2 a 4 frases cortas en español de México, " +
+      "sin tecnicismos, que expliquen de dónde sale el número]}";
+    btn.disabled = true;
+    $("usarIA").hidden = true;
+    $("iaRes").className = "";
+    $("iaRes").textContent = "Pensando…";
+    $("iaRazones").innerHTML = "";
+    sample.json(prompt, { modelTier: "quick" }).then(function (res) {
+      var p = Math.round(Number(res && res.porcentaje));
+      if (!isFinite(p) || p < 0 || p > 100) throw { code: "invalid_json" };
+      iaPct = p;
+      $("iaRes").innerHTML = "Claude recomienda <b>" + p + " %</b>";
+      $("iaRazones").innerHTML = (Array.isArray(res.razones) ? res.razones : []).slice(0, 4)
+        .map(function (t) { return "<li>" + esc(t) + "</li>"; }).join("");
+      $("usarIA").hidden = false;
+      $("usarIA").textContent = "Usar " + p + " %";
+    }).catch(function (e) {
+      var code = e && e.code;
+      $("iaRes").className = "err";
+      if (code === "not_granted" || code === "sampling_disabled") {
+        $("iaRes").textContent = "Claude no tiene permiso en esta página. Usa la recomendación de arriba.";
+      } else if (code === "rate_limited") {
+        $("iaRes").textContent = "Hay muchas preguntas seguidas. Espera un minuto y vuelve a intentar.";
+      } else if (code === "cancelled") {
+        $("iaRes").textContent = "";
+      } else {
+        $("iaRes").textContent = "Claude no pudo responder. Vuelve a intentar o usa la recomendación de arriba.";
+      }
+    }).then(function () { btn.disabled = false; });
+  });
+  $("usarIA").addEventListener("click", function () {
+    if (iaPct == null) return;
+    $("desperdicio").value = iaPct;
+    pintar();
+    $("status").textContent = "Desperdicio cambiado a " + iaPct + " %, como recomendó Claude.";
+  });
+  $("usarReco").addEventListener("click", function () {
+    var p = recomendacion().pct;
+    $("desperdicio").value = p;
+    pintar();
+    $("status").textContent = "Desperdicio cambiado a " + p + " %.";
+  });
+
+  // ---------- PDF ----------
+  // Dentro de Claude la descarga pasa por la capacidad "downloads"; abierto como archivo o en otro sitio,
+  // jsPDF descarga directo.
+  var enMarco = (function () { try { return window.self !== window.top; } catch (e) { return true; } })();
+  var conClaude = !!(window.claude && claude.use);
+  var downloadsListo = conClaude
+    ? claude.use("downloads").catch(function () { return null; })
+    : Promise.resolve(null);
+
+  function hacerPDF() {
+    var J = window.jspdf && window.jspdf.jsPDF;
+    if (!J) throw new Error("sin_jspdf");
+    var d = ultimo.d, r = ultimo.r;
+    var doc = new J({ unit: "mm", format: "letter" });
+    var W = doc.internal.pageSize.getWidth(), H = doc.internal.pageSize.getHeight();
+    var M = 18, y = M;
+    var VERDE = [11, 122, 98], TINTA = [21, 33, 30], GRIS = [91, 107, 103], LINEA = [211, 220, 217];
+    var color = function (c) { doc.setTextColor(c[0], c[1], c[2]); };
+    var linea = function (yy, c, w) { doc.setDrawColor(c[0], c[1], c[2]); doc.setLineWidth(w || 0.3); doc.line(M, yy, W - M, yy); };
+    var saltar = function (alto) { if (y + alto > H - M - 10) { doc.addPage(); y = M; } };
+
+    var negocio = $("negocio").value.trim(), contacto = $("contacto").value.trim();
+    var fecha = new Date();
+    var vence = new Date(fecha.getTime() + (num("vigencia") || 15) * 864e5);
+    var fmtF = function (f) { return f.toLocaleDateString("es-MX", { day: "numeric", month: "long", year: "numeric" }); };
+
+    // encabezado
+    doc.setFont("helvetica", "bold"); doc.setFontSize(18); color(TINTA);
+    doc.text(negocio || "Impresión 3D", M, y + 6);
+    doc.setFont("helvetica", "normal"); doc.setFontSize(10); color(GRIS);
+    if (contacto) doc.text(contacto, M, y + 12);
+    doc.setFont("helvetica", "bold"); doc.setFontSize(22); color(VERDE);
+    doc.text("Cotización", W - M, y + 7, { align: "right" });
+    doc.setFont("helvetica", "normal"); doc.setFontSize(10); color(GRIS);
+    doc.text("Folio " + ($("folio").value.trim() || "s/n"), W - M, y + 13, { align: "right" });
+    doc.text("Fecha: " + fmtF(fecha), W - M, y + 18, { align: "right" });
+    doc.text("Válida hasta: " + fmtF(vence), W - M, y + 23, { align: "right" });
+    y += 30;
+    linea(y, VERDE, 0.8);
+    y += 9;
+
+    // cliente y trabajo
+    var par = function (et, val) {
+      doc.setFont("helvetica", "bold"); doc.setFontSize(10); color(GRIS); doc.text(et, M, y);
+      doc.setFont("helvetica", "normal"); doc.setFontSize(11); color(TINTA);
+      var t = doc.splitTextToSize(val, W - 2 * M - 30);
+      doc.text(t, M + 30, y);
+      y += 6 * t.length;
+    };
+    if ($("cliente").value.trim()) par("Cliente", $("cliente").value.trim());
+    par("Trabajo", $("nombre").value.trim() || "Impresión 3D");
+    par("Material", d.material);
+    if ($("entrega").value.trim()) par("Entrega", $("entrega").value.trim());
+    y += 6;
+
+    // tabla de piezas
+    var cols = [M, M + 92, M + 118, M + 146];
+    var cabecera = function (titulos, alinear) {
+      doc.setFillColor(227, 238, 234); doc.rect(M, y - 5, W - 2 * M, 8, "F");
+      doc.setFont("helvetica", "bold"); doc.setFontSize(9.5); color(TINTA);
+      titulos.forEach(function (t, i) { doc.text(t, alinear[i] === "right" ? (cols[i + 1] ? cols[i + 1] - 4 : W - M - 2) : cols[i] + 2, y, { align: alinear[i] }); });
+      y += 8;
+    };
+    cabecera(["Pieza", "Cantidad", "Peso c/u", "Tiempo c/u"], ["left", "right", "right", "right"]);
+    doc.setFont("helvetica", "normal"); doc.setFontSize(10);
+    d.piezas.forEach(function (p) {
+      var nm = doc.splitTextToSize(p.nombre, 86);
+      saltar(6 * nm.length + 2);
+      color(TINTA);
+      doc.text(nm, cols[0] + 2, y);
+      doc.text(String(p.cantidad), cols[2] - 4, y, { align: "right" });
+      doc.text(entero.format(p.gramos) + " g", cols[3] - 4, y, { align: "right" });
+      doc.text(tiempo(p.horas), W - M - 2, y, { align: "right" });
+      y += 5 * nm.length + 1;
+      linea(y - 3, LINEA);
+      y += 2;
+    });
+    doc.setFont("helvetica", "bold"); color(TINTA);
+    doc.text("Total", cols[0] + 2, y);
+    doc.text(String(r.cant), cols[2] - 4, y, { align: "right" });
+    doc.text(entero.format(r.gramos) + " g", cols[3] - 4, y, { align: "right" });
+    doc.text(tiempo(r.horas), W - M - 2, y, { align: "right" });
+    y += 12;
+
+    // conceptos
+    var conceptos;
+    if ($("desglose").checked) {
+      conceptos = [
+        ["Filamento " + d.material + " (" + entero.format(r.gramos) + " g)", r.material],
+        ["Luz (" + r.kwh.toFixed(2) + " kWh)", r.luz],
+        ["Uso de la impresora (" + tiempo(r.horas) + ")", r.desgaste],
+        ["Desperdicio y reimpresiones (" + d.desperdicio + " %)", r.desperdicio]
+      ];
+      if (r.post) conceptos.push(["Postproceso y otros", r.post]);
+      conceptos.push(["Margen", r.ganancia]);
+    } else {
+      conceptos = [["Impresión 3D de " + r.cant + (r.cant === 1 ? " pieza" : " piezas") + " (" + tiempo(r.horas) + " de máquina)", r.precio - r.diseno]];
+    }
+    if (d.cobrarDiseno && r.diseno) conceptos.push(["Diseño y modelado 3D (" + tiempo(d.disHoras) + ")", r.diseno]);
+
+    saltar(10 + conceptos.length * 8 + 20);
+    cols = [M, W - M];
+    doc.setFillColor(227, 238, 234); doc.rect(M, y - 5, W - 2 * M, 8, "F");
+    doc.setFont("helvetica", "bold"); doc.setFontSize(9.5); color(TINTA);
+    doc.text("Concepto", M + 2, y); doc.text("Importe", W - M - 2, y, { align: "right" });
+    y += 8;
+    doc.setFont("helvetica", "normal"); doc.setFontSize(10);
+    conceptos.forEach(function (c) {
+      var t = doc.splitTextToSize(c[0], W - 2 * M - 45);
+      color(TINTA);
+      doc.text(t, M + 2, y);
+      doc.text(dinero.format(c[1]), W - M - 2, y, { align: "right" });
+      y += 5 * t.length + 1;
+      linea(y - 3, LINEA);
+      y += 2;
+    });
+    y += 4;
+    doc.setFont("helvetica", "bold"); doc.setFontSize(13); color(TINTA);
+    doc.text("Total", W - M - 60, y);
+    doc.setFontSize(16); color(VERDE);
+    doc.text(dinero.format(r.precio) + " MXN", W - M - 2, y, { align: "right" });
+    y += 14;
+
+    // notas
+    var notas = $("notas").value.trim();
+    if (notas) {
+      var t = doc.splitTextToSize(notas, W - 2 * M);
+      saltar(8 + 5 * t.length);
+      doc.setFont("helvetica", "bold"); doc.setFontSize(10); color(GRIS); doc.text("Notas", M, y);
+      y += 6;
+      doc.setFont("helvetica", "normal"); doc.setFontSize(10); color(TINTA);
+      doc.text(t, M, y);
+    }
+
+    // pie
+    var paginas = doc.getNumberOfPages();
+    for (var i = 1; i <= paginas; i++) {
+      doc.setPage(i);
+      doc.setFont("helvetica", "normal"); doc.setFontSize(8.5); color(GRIS);
+      doc.text("Precios en pesos mexicanos (MXN).", M, H - 10);
+      if (paginas > 1) doc.text("Página " + i + " de " + paginas, W - M, H - 10, { align: "right" });
+    }
+    return doc;
+  }
+
+  $("pdf").addEventListener("click", function () {
+    var st = $("status");
+    var doc;
+    try { doc = hacerPDF(); } catch (e) {
+      st.textContent = "No se pudo armar el PDF: falta cargar la librería. Revisa tu conexión y recarga la página.";
+      return;
+    }
+    var archivo = "Cotizacion " + ($("folio").value.trim() || "") + " " + ($("cliente").value.trim() || "") ;
+    archivo = archivo.replace(/[\\/:*?"<>|]+/g, "").replace(/\s+/g, " ").trim() + ".pdf";
+    if (!conClaude || !enMarco) {
+      doc.save(archivo);
+      st.textContent = "PDF descargado: " + archivo;
+      return;
+    }
+    st.textContent = "Preparando la descarga…";
+    downloadsListo.then(function (downloads) {
+      if (!downloads) {
+        st.textContent = "Aquí no se puede descargar. Usa el archivo cotizador para compartir: se abre en cualquier navegador y descarga el PDF directo.";
+        return;
+      }
+      st.textContent = "Confirma la descarga en la ventana que aparece.";
+      return downloads.save({ filename: archivo, data: doc.output("arraybuffer") }).then(function () {
+        st.textContent = "PDF descargado: " + archivo;
+      }, function (e) {
+        var code = e && e.code;
+        if (code === "declined") st.textContent = "Descarga cancelada.";
+        else if (code === "rate_limited") st.textContent = "Ya hay una descarga esperando. Confírmala o espera un momento.";
+        else st.textContent = "Aquí no se puede descargar. Usa el archivo cotizador para compartir o copia el texto.";
+      });
+    });
+  });
+
+  // ---------- eventos ----------
+  cargar();
+  dibujarPiezas();
+
+  $("f").addEventListener("input", function (e) { if (!e.target.closest(".pz")) pintar(); });
+  $("f").addEventListener("change", function (e) { if (!e.target.closest(".pz")) pintar(); });
+  $("f").addEventListener("submit", function (e) { e.preventDefault(); });
+
+  $("agregarPieza").addEventListener("click", function () {
+    piezas.push({ nombre: "", cantidad: 1, gramos: 0, horas: 0, minutos: 0 });
+    dibujarPiezas();
+    pintar();
+    $("pz" + (piezas.length - 1) + "-nombre").focus();
+  });
+
+  document.querySelectorAll(".chip").forEach(function (b) {
+    b.addEventListener("click", function () { $("margen").value = b.dataset.m; pintar(); });
+  });
+
+  $("reiniciar").addEventListener("click", function () {
+    CAMPOS.forEach(function (c) { if (c !== "folio") poner($(c), iniciales[c]); });
+    piezas = JSON.parse(JSON.stringify(PIEZAS_EJEMPLO));
+    dibujarPiezas();
+    pintar();
+    $("status").textContent = "Datos del ejemplo restaurados.";
+  });
+
+  $("copiar").addEventListener("click", function () {
+    var t = $("texto").value;
+    var listo = function () { $("status").textContent = "Texto copiado. Pégalo en WhatsApp o en un correo."; };
+    var manual = function () { $("texto").select(); $("status").textContent = "Selecciona el texto de abajo y cópialo con Ctrl+C."; };
+    try { navigator.clipboard.writeText(t).then(listo, manual); } catch (e) { manual(); }
+  });
+
+  pintar();
+})();
+</script>
+
+</body>
+</html>
